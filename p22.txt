@@ -1,0 +1,50 @@
+import numpy as np
+import matplotlib.pyplot as plt
+from matplotlib.colors import hsv_to_rgb
+import pandas as pd
+import seaborn as sns
+
+def f(z):
+    return 1j*np.arcsinh(z)
+def Hcomplex(z):
+    H = np.angle(z) / (2*np.pi) + 1
+    return np.mod(H, 1)
+
+t = 100
+x = np.arange(-1, 1, 1/t)
+y = np.arange(-1, 1, 1/t)
+df = pd.DataFrame(columns=['x', 'y', 'z', 'rose'])
+for x1 in x:
+    for y1 in y:
+        n = np.arange(0,15,1)
+        if max(0.2*abs(np.cos((3/5)*(np.arctan2(y1,x1)+2*np.pi*n)))) <= np.sqrt((x1)**2 + (y1)**2) and np.sqrt((x1)**2 + (y1)**2) <= max(0.9*abs(np.cos((2/3)*(np.arctan2(y1,x1)+2*np.pi*n)))):
+            df.loc[len(df)] = [x1, y1, x1 + 1j*y1, np.arctan2(y1,x1)*np.exp(-(x1)**2 - (y1)**2)]
+        else:
+            df.loc[len(df)] = [x1, y1, x1 + 1j*y1, 0]
+df = df.astype({'x':np.float64, 'y':np.float64, 'rose':np.float64})
+pivot = pd.pivot_table(df,index='y',columns='x', values='rose')
+pivot = pivot.sort_index(ascending=False)
+fig, axes = plt.subplots(figsize=(7, 4))
+sns.heatmap(data=pivot, square=True,cmap='viridis', ax=axes, cbar=False)
+plt.show()
+
+size = int(df.shape[0]**0.5)
+
+image = df.copy()
+for i in range(len(image['rose'])):
+    image.loc[i, 'z'] = f(df.loc[i, 'z'])
+    image.loc[i, 'x'] = round(image.loc[i, 'z'].real, 2)
+    image.loc[i, 'y'] = round(image.loc[i, 'z'].imag, 2)
+final = image.to_numpy()
+w = final[:,2]
+H = Hcomplex(w)
+V = abs(w)
+S = 0.8*np.ones(H.shape)
+HSV = np.dstack((H, S, V))
+RGB = hsv_to_rgb(HSV)
+pivot = pd.pivot_table(image,index='y',columns='x', values='rose')
+pivot = pivot.sort_index(ascending=False)
+fig, axes = plt.subplots(figsize=(7, 4))
+sns.heatmap(pivot, square=True,cmap='viridis', ax=axes, cbar=False)
+plt.show()
+
